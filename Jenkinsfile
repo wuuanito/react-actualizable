@@ -98,10 +98,81 @@ pipeline {
             echo "Build: ${BUILD_NUMBER}"
             echo "Versión: ${GIT_COMMIT}"
             echo "Sitio: http://192.168.11.7:2000"
+            
+            // Notificar al servidor WebSocket sobre el nuevo deployment
+            script {
+                try {
+                    echo "📡 Enviando notificación de actualización..."
+                    
+                    def notificationPayload = [
+                        buildNumber: "${BUILD_NUMBER}",
+                        gitCommit: "${GIT_COMMIT}",
+                        project: "react-actualizable",
+                        status: "success",
+                        deployUrl: "http://192.168.11.7:2000",
+                        timestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                    ]
+                    
+                    def jsonPayload = groovy.json.JsonBuilder(notificationPayload).toString()
+                    
+                    // Enviar notificación usando PowerShell y curl
+                    bat """
+                        powershell -Command "
+                        try {
+                            \$headers = @{'Content-Type' = 'application/json'}
+                            \$body = '${jsonPayload}'
+                            \$response = Invoke-RestMethod -Uri 'http://192.168.11.7:6003/notify-deployment' -Method Post -Headers \$headers -Body \$body -TimeoutSec 10
+                            Write-Host '✅ Notificación enviada correctamente'
+                            Write-Host \$response
+                        } catch {
+                            Write-Host '⚠️ Error enviando notificación:' \$_.Exception.Message
+                            Write-Host 'El deployment fue exitoso pero la notificación falló'
+                        }
+                        "
+                    """
+                    
+                    echo "🎉 Notificación de actualización enviada"
+                    echo "📱 Los usuarios conectados recibirán la notificación automáticamente"
+                    
+                } catch (Exception e) {
+                    echo "⚠️ Error enviando notificación: ${e.getMessage()}"
+                    echo "El deployment fue exitoso pero la notificación falló"
+                }
+            }
         }
         failure {
             echo "=== DEPLOYMENT FALLÓ ==="
             echo "Revisar logs y verificar la etapa de build."
+            
+            // Opcional: notificar fallo al servidor WebSocket
+            script {
+                try {
+                    def notificationPayload = [
+                        buildNumber: "${BUILD_NUMBER}",
+                        gitCommit: "${GIT_COMMIT}",
+                        project: "react-actualizable",
+                        status: "failure",
+                        deployUrl: "http://192.168.11.7:2000",
+                        timestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                    ]
+                    
+                    def jsonPayload = groovy.json.JsonBuilder(notificationPayload).toString()
+                    
+                    bat """
+                        powershell -Command "
+                        try {
+                            \$headers = @{'Content-Type' = 'application/json'}
+                            \$body = '${jsonPayload}'
+                            Invoke-RestMethod -Uri 'http://192.168.11.7:6003/notify-deployment' -Method Post -Headers \$headers -Body \$body -TimeoutSec 5
+                        } catch {
+                            Write-Host 'No se pudo notificar el fallo'
+                        }
+                        "
+                    """
+                } catch (Exception e) {
+                    // Ignorar errores de notificación en caso de fallo
+                }
+            }
         }
         always {
             bat 'if exist "node_modules" rd /s /q node_modules 2>nul'
