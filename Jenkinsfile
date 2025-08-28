@@ -108,8 +108,7 @@ pipeline {
                     def jsonPayload = "{\"buildNumber\":\"${BUILD_NUMBER}\",\"gitCommit\":\"${GIT_COMMIT}\",\"project\":\"react-actualizable\",\"status\":\"success\",\"deployUrl\":\"http://192.168.11.7:2000\",\"timestamp\":\"${timestamp}\"}"
                     
                     // Enviar notificación usando el servidor WebSocket remoto
-                    bat """
-                        powershell -Command "
+                    powershell """
                         try {
                             \$headers = @{'Content-Type' = 'application/json'}
                             \$body = '${jsonPayload}'
@@ -120,7 +119,6 @@ pipeline {
                             Write-Host '⚠️ Error enviando notificación:' \$_.Exception.Message
                             Write-Host 'El deployment fue exitoso pero la notificación falló'
                         }
-                        "
                     """
                     
                     echo "🎉 Notificación de actualización enviada"
