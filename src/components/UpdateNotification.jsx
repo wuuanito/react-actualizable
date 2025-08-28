@@ -1,92 +1,152 @@
 import React, { useEffect, useState } from 'react';
+import { 
+  notification, 
+  Button, 
+  Space, 
+  Typography, 
+  Tag, 
+  Switch, 
+  Progress, 
+  Card 
+} from 'antd';
+import { 
+  ReloadOutlined, 
+  CloseOutlined, 
+  CheckCircleOutlined 
+} from '@ant-design/icons';
 
-const UpdateNotification = ({ updateAvailable, newVersion, onUpdate, onDismiss }) => {
-    const [countdown, setCountdown] = useState(10);
-    const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
+const { Text } = Typography;
 
-    useEffect(() => {
-        if (!updateAvailable || !autoUpdateEnabled) return;
+const UpdateNotification = ({ isVisible, message, onUpdate, onDismiss }) => {
+  const [countdown, setCountdown] = useState(10);
+  const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
+  const [notificationInstance, setNotificationInstance] = useState(null);
 
-        const timer = setInterval(() => {
-            setCountdown(prev => {
-                if (prev <= 1) {
-                    onUpdate();
-                    return 0;
-                }
-                return prev - 1;
-            });
-        }, 1000);
+  useEffect(() => {
+    if (!isVisible || !autoUpdateEnabled) return;
 
-        return () => clearInterval(timer);
-    }, [updateAvailable, autoUpdateEnabled, onUpdate]);
+    const timer = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          if (onUpdate) onUpdate();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
 
-    if (!updateAvailable || !newVersion) return null;
+    return () => clearInterval(timer);
+  }, [isVisible, autoUpdateEnabled, onUpdate]);
 
-    return (
-        <div className="position-fixed top-0 end-0 m-3" style={{ zIndex: 1050 }}>
-            <div className="toast show border-0 shadow-lg" role="alert" style={{ minWidth: '350px' }}>
-                <div className="toast-header bg-gradient bg-success text-white">
-                    <div className="rounded me-2 bg-white" style={{ width: '20px', height: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        <i className="bi bi-arrow-clockwise text-success"></i>
-                    </div>
-                    <strong className="me-auto">Nueva versión disponible</strong>
-                    <small>{new Date(newVersion.timestamp).toLocaleTimeString()}</small>
-                    <button 
-                        type="button" 
-                        className="btn-close btn-close-white" 
-                        onClick={onDismiss}
-                    ></button>
-                </div>
-                <div className="toast-body">
-                    <div className="mb-2">
-                        <small className="text-muted">Versión:</small>
-                        <br />
-                        <code className="bg-light p-1 rounded">{newVersion.version}</code>
-                    </div>
-                    <div className="mb-3">
-                        <small className="text-muted">Proyecto:</small>
-                        <br />
-                        <span className="badge bg-info">{newVersion.project}</span>
-                    </div>
-                    
-                    {/* Toggle para auto-actualización */}
-                    <div className="form-check mb-3">
-                        <input 
-                            className="form-check-input" 
-                            type="checkbox" 
-                            id="autoUpdate"
-                            checked={autoUpdateEnabled}
-                            onChange={(e) => {
-                                setAutoUpdateEnabled(e.target.checked);
-                                if (e.target.checked) setCountdown(10);
-                            }}
-                        />
-                        <label className="form-check-label small" htmlFor="autoUpdate">
-                            Actualizar automáticamente en {countdown}s
-                        </label>
-                    </div>
-                    
-                    <div className="d-grid gap-2">
-                        <button 
-                            className="btn btn-success btn-sm"
-                            onClick={onUpdate}
-                        >
-                            <i className="bi bi-arrow-clockwise me-1"></i>
-                            Actualizar ahora
-                        </button>
-                        {autoUpdateEnabled && (
-                            <div className="progress" style={{ height: '4px' }}>
-                                <div 
-                                    className="progress-bar bg-success" 
-                                    style={{ width: `${(11 - countdown) * 10}%` }}
-                                ></div>
-                            </div>
-                        )}
-                    </div>
-                </div>
+  useEffect(() => {
+    if (isVisible && message) {
+      const key = `update-notification-${Date.now()}`;
+      
+      const notificationContent = (
+        <Card 
+           size="small" 
+           style={{ width: 350, margin: 0 }}
+           styles={{ body: { padding: '16px' } }}
+         >
+          <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+            <div>
+              <Text strong>Nueva versión disponible</Text>
+              <br />
+              <Text type="secondary" style={{ fontSize: '12px' }}>
+                {new Date().toLocaleTimeString()}
+              </Text>
             </div>
-        </div>
-    );
+            
+            {message && (
+              <div>
+                <Text type="secondary" style={{ fontSize: '12px' }}>Mensaje:</Text>
+                <br />
+                <Text code style={{ fontSize: '12px' }}>{message}</Text>
+              </div>
+            )}
+            
+            <div>
+              <Text type="secondary" style={{ fontSize: '12px' }}>Proyecto:</Text>
+              <br />
+              <Tag color="blue">React App</Tag>
+            </div>
+            
+            {/* Toggle para auto-actualización */}
+            <Space align="center">
+              <Switch 
+                size="small"
+                checked={autoUpdateEnabled}
+                onChange={(checked) => {
+                  setAutoUpdateEnabled(checked);
+                  if (checked) setCountdown(10);
+                }}
+              />
+              <Text style={{ fontSize: '12px' }}>
+                Actualizar automáticamente en {countdown}s
+              </Text>
+            </Space>
+            
+            {autoUpdateEnabled && (
+              <Progress 
+                percent={(11 - countdown) * 10} 
+                size="small" 
+                status="active"
+                showInfo={false}
+              />
+            )}
+            
+            <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+              <Button 
+                size="small"
+                onClick={() => {
+                  notification.close(key);
+                  if (onDismiss) onDismiss();
+                }}
+              >
+                Descartar
+              </Button>
+              <Button 
+                type="primary" 
+                size="small"
+                icon={<ReloadOutlined />}
+                onClick={() => {
+                  notification.close(key);
+                  if (onUpdate) onUpdate();
+                }}
+              >
+                Actualizar ahora
+              </Button>
+            </Space>
+          </Space>
+        </Card>
+      );
+
+      notification.open({
+        key,
+        message: null,
+        description: notificationContent,
+        icon: <CheckCircleOutlined style={{ color: '#52c41a' }} />,
+        placement: 'topRight',
+        duration: 0, // No auto close
+        closable: true,
+        onClose: () => {
+          if (onDismiss) onDismiss();
+        }
+      });
+
+      setNotificationInstance(key);
+    }
+
+    return () => {
+      if (notificationInstance) {
+        notification.close(notificationInstance);
+      }
+    };
+  }, [isVisible, message]);
+
+  // Este componente ahora usa las notificaciones de Ant Design
+  // No renderiza nada directamente
+  return null;
 };
 
 export default UpdateNotification;
