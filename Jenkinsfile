@@ -60,7 +60,7 @@ pipeline {
                 // Copiar nuevo contenido desde dist
                 bat '''
                     echo "Copiando archivos de dist..."
-                    xcopy "dist\\*" "%DEPLOY_DIR%\\" /E /I /Y
+                    xcopy "E:\\jenkins-agent\\workspace\\react-auto-deploy\\dist\\*" "%DEPLOY_DIR%\\" /E /I /Y
                     if errorlevel 1 (
                         echo "ERROR: No se pudieron copiar los archivos"
                         exit /b 1
@@ -73,7 +73,7 @@ pipeline {
             steps {
                 echo 'Verificando despliegue...'
                 bat '''
-                    if exist "dist" (
+                    if exist "E:\\jenkins-agent\\workspace\\react-auto-deploy\\dist" (
                         echo "Build OK - dist existe"
                     ) else (
                         echo "Build FALLÓ - dist no existe"
@@ -115,7 +115,7 @@ pipeline {
                     
                     def jsonPayload = groovy.json.JsonBuilder(notificationPayload).toString()
                     
-                    // Enviar notificación usando PowerShell y curl
+                    // Enviar notificación usando PowerShell
                     bat """
                         powershell -Command "
                         try {
