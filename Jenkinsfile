@@ -1,5 +1,8 @@
 pipeline {
-    agent any  // Ejecutará en el servidor donde esté Jenkins (192.168.11.7)
+    agent {
+        label 'master' // Forzar ejecución en el master (Windows Server)
+        // O usa 'any' si solo tienes nodos Windows
+    }
     
     environment {
         // Configuración del WebSocket server (localhost porque Jenkins está en el mismo server)
