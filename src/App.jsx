@@ -23,7 +23,7 @@ function App() {
       {/* Contenido principal */}
       <div className="container mt-5">
         <div className="text-center">
-          <h1 className="display-1 text-primary">¡Hola Mundo!</h1>
+          <h1 className="display-1 text-primary">¡Hola MUNDIIII!</h1>
           <p className="lead text-muted">Aplicación con notificaciones automáticas</p>
         </div>
       </div>
