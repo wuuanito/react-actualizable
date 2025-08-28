@@ -113,7 +113,7 @@ pipeline {
                         timestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
                     ]
                     
-                    def jsonPayload = groovy.json.JsonBuilder(notificationPayload).toString()
+                    def jsonPayload = new groovy.json.JsonBuilder(notificationPayload).toString()
                     
                     // Enviar notificación usando el servidor WebSocket remoto
                     bat """
