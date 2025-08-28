@@ -46,7 +46,7 @@ function App() {
         <div className="container">
           <a className="navbar-brand d-flex align-items-center" href="#home">
             <i className="bi bi-rocket me-2 fs-4"></i>
-            <span>Mi ILOOOOO con Auto-Updates</span>
+            <span>Mi SUUUUUUU con Auto-Updates</span>
             <small className="ms-2 opacity-75">v2.0 con Vite</small>
           </a>
           

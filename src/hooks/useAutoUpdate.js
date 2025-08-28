@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import io from 'socket.io-client';
 
 // Configuración del WebSocket usando variables de Vite
-const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL || 'http://localhost:3001';
+const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL || 'http://192.168.11.7:6003';
 
 const useAutoUpdate = () => {
     const [updateAvailable, setUpdateAvailable] = useState(false);
