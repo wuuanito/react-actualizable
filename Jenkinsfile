@@ -10,19 +10,20 @@ pipeline {
 
     stages {
         stage('Checkout') {
-            steps {
-                echo 'Descargando código fuente...'
-                checkout([
-                    $class: 'GitSCM',
-                    branches: [[name: '*/main']],
-                    userRemoteConfigs: [[
-                        url: 'https://github.com/wuuanito/react-actualizable.git',
-                        credentialsId: 'REGISTRY_CREDS'
-                    ]]
-                ])
-                bat 'git log -1 --format="Commit: %H"'
-            }
-        }
+    steps {
+        echo 'Descargando código fuente...'
+        checkout([
+            $class: 'GitSCM',
+            branches: [[name: '*/main']],
+            userRemoteConfigs: [[
+                url: 'https://github.com/wuuanito/react-actualizable.git',
+                credentialsId: 'REGISTRY_CREDS'
+            ]]
+        ])
+        bat('git log -1 --format="Commit: %%H"')
+    }
+}
+
 
         stage('Verificar Entorno') {
             steps {
