@@ -115,14 +115,14 @@ pipeline {
                     
                     def jsonPayload = groovy.json.JsonBuilder(notificationPayload).toString()
                     
-                    // Enviar notificación usando PowerShell
+                    // Enviar notificación usando el servidor WebSocket remoto
                     bat """
                         powershell -Command "
                         try {
                             \$headers = @{'Content-Type' = 'application/json'}
                             \$body = '${jsonPayload}'
                             \$response = Invoke-RestMethod -Uri 'http://192.168.11.7:6003/notify-deployment' -Method Post -Headers \$headers -Body \$body -TimeoutSec 10
-                            Write-Host '✅ Notificación enviada correctamente'
+                            Write-Host '✅ Notificación enviada correctamente al servidor WebSocket remoto'
                             Write-Host \$response
                         } catch {
                             Write-Host '⚠️ Error enviando notificación:' \$_.Exception.Message
