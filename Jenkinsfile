@@ -104,16 +104,8 @@ pipeline {
                 try {
                     echo "📡 Enviando notificación de actualización..."
                     
-                    def notificationPayload = [
-                        buildNumber: "${BUILD_NUMBER}",
-                        gitCommit: "${GIT_COMMIT}",
-                        project: "react-actualizable",
-                        status: "success",
-                        deployUrl: "http://192.168.11.7:2000",
-                        timestamp: new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
-                    ]
-                    
-                    def jsonPayload = new groovy.json.JsonBuilder(notificationPayload).toString()
+                    def timestamp = new Date().format("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'")
+                    def jsonPayload = "{\"buildNumber\":\"${BUILD_NUMBER}\",\"gitCommit\":\"${GIT_COMMIT}\",\"project\":\"react-actualizable\",\"status\":\"success\",\"deployUrl\":\"http://192.168.11.7:2000\",\"timestamp\":\"${timestamp}\"}"
                     
                     // Enviar notificación usando el servidor WebSocket remoto
                     bat """
