@@ -1,49 +1,29 @@
 pipeline {
-    agent {
-        label 'principal' // Usar nodo principal (Windows Server)
-    }
+    agent any  // Usar cualquier nodo disponible
     
     environment {
-        // Configuración del WebSocket server
+        // Configuración del WebSocket server (localhost porque Jenkins está en el mismo server)
         WEBSOCKET_URL = 'http://localhost:6003'
         
-        // Configuración de IIS (solo Windows)
+        // Configuración de IIS según tu configuración actual
         IIS_SITE_PATH = 'C:\\Users\\Administrador\\Desktop\\WebAuto'
         IIS_SITE_NAME = 'PruebaWebAuto'
         
         // Variables del build
         BUILD_VERSION = "${env.GIT_COMMIT.take(7)}"
         BUILD_TIMESTAMP = "${currentBuild.startTimeInMillis}"
-        PROJECT_NAME = 'PruebaWebAuto'
+        PROJECT_NAME = 'mi-app-react'
+        
+        // Node.js en Windows Server (ajustar si es necesario)
+        NODEJS_HOME = 'C:\\Program Files\\nodejs'
+        PATH = "${env.NODEJS_HOME};${env.PATH}"
     }
     
     stages {
-        stage('Verificar Sistema') {
-            steps {
-                script {
-                    // Detectar sistema operativo
-                    def isWindows = isUnix() ? false : true
-                    
-                    echo "🖥️ Sistema operativo detectado: ${isWindows ? 'Windows' : 'Unix/Linux'}"
-                    echo "🏷️ Node name: ${env.NODE_NAME}"
-                    echo "🏷️ Node labels: ${env.NODE_LABELS}"
-                    
-                    if (!isWindows) {
-                        error("❌ Este pipeline requiere un nodo Windows. Sistema actual: Unix/Linux")
-                    }
-                    
-                    echo "✅ Sistema Windows confirmado - continuando con deployment"
-                }
-            }
-        }
-        
         stage('Preparación') {
-            when {
-                expression { !isUnix() }
-            }
             steps {
                 echo '🚀 Iniciando deployment desde repositorio remoto...'
-                echo "🖥️ Ejecutando en nodo Windows: ${env.NODE_NAME ?: 'Jenkins Master'}"
+                echo "🖥️ Ejecutando en servidor: ${env.NODE_NAME ?: 'Jenkins Master'}"
                 echo "📁 Workspace: ${env.WORKSPACE}"
                 
                 // Limpiar workspace anterior si existe
@@ -52,45 +32,30 @@ pipeline {
         }
         
         stage('Checkout') {
-            when {
-                expression { !isUnix() }
-            }
             steps {
                 echo '📥 Descargando código fuente del repositorio...'
                 checkout scm
                 
-                script {
-                    if (isUnix()) {
-                        sh '''
-                            echo "🔍 Información del commit:"
-                            git log -1 --format="Commit: %H"
-                            git log -1 --format="Author: %an <%ae>"
-                            git log -1 --format="Message: %s"
-                            ls -la
-                        '''
-                    } else {
-                        bat '''
-                            echo "🔍 Información del commit:"
-                            git log -1 --format="Commit: %%H"
-                            git log -1 --format="Author: %%an <%%ae>"
-                            git log -1 --format="Message: %%s"
-                            dir /w
-                        '''
-                    }
-                }
+                bat '''
+                    echo "🔍 Información del commit:"
+                    git log -1 --format="Commit: %%H"
+                    git log -1 --format="Author: %%an <%%ae>"
+                    git log -1 --format="Message: %%s"
+                    
+                    echo "📂 Contenido del proyecto:"
+                    dir /w
+                '''
             }
         }
         
-        stage('Verificar Entorno Windows') {
-            when {
-                expression { !isUnix() }
-            }
+        stage('Verificar Entorno') {
             steps {
-                echo '🔧 Verificando herramientas necesarias en Windows...'
+                echo '🔧 Verificando herramientas necesarias...'
                 bat '''
                     echo "📦 Verificando Node.js..."
                     node --version || (
-                        echo "❌ Node.js no encontrado"
+                        echo "❌ Node.js no encontrado en PATH"
+                        echo "PATH actual: %PATH%"
                         exit /b 1
                     )
                     
@@ -102,22 +67,19 @@ pipeline {
                     
                     echo "🌐 Verificando IIS..."
                     %windir%\\system32\\inetsrv\\appcmd list sites || (
-                        echo "❌ IIS no disponible"
+                        echo "❌ IIS no disponible o no configurado"
                         exit /b 1
                     )
                     
                     echo "📡 Verificando WebSocket server..."
-                    powershell -Command "try { Invoke-WebRequest -Uri '%WEBSOCKET_URL%/health' -UseBasicParsing -TimeoutSec 5 | Out-Null; Write-Host '✅ WebSocket server disponible' } catch { Write-Host '⚠️ WebSocket server no responde' }"
+                    powershell -Command "try { Invoke-WebRequest -Uri '%WEBSOCKET_URL%/health' -UseBasicParsing | Out-Null; Write-Host '✅ WebSocket server disponible' } catch { Write-Host '⚠️ WebSocket server no responde'; }"
                     
-                    echo "✅ Entorno Windows verificado correctamente"
+                    echo "✅ Entorno verificado correctamente"
                 '''
             }
         }
         
         stage('Instalar Dependencias') {
-            when {
-                expression { !isUnix() }
-            }
             steps {
                 echo '📦 Instalando dependencias de Node.js...'
                 bat '''
@@ -135,9 +97,6 @@ pipeline {
         }
         
         stage('Build React App') {
-            when {
-                expression { !isUnix() }
-            }
             steps {
                 echo '⚛️ Construyendo aplicación React con Vite...'
                 bat '''
@@ -157,19 +116,18 @@ pipeline {
                     
                     echo "📁 Contenido del build:"
                     dir dist /w
+                    
+                    echo "📊 Tamaño del build:"
+                    for /r dist %%i in (*.*) do @echo %%~nxi: %%~zi bytes
                 '''
             }
         }
         
-        stage('Backup y Deploy a IIS') {
-            when {
-                expression { !isUnix() }
-            }
+        stage('Backup y Preparación') {
             steps {
-                echo '🚀 Creando backup y desplegando a IIS...'
+                echo '💾 Creando backup del deployment actual...'
                 bat '''
-                    REM Crear backup
-                    set "BACKUP_DIR=C:\\Backups\\WebAuto"
+                    set "BACKUP_DIR=C:\\Backups\\mi-app-react"
                     set "BACKUP_PATH=%BACKUP_DIR%\\build-%BUILD_NUMBER%-%date:~-4,4%%date:~-10,2%%date:~-7,2%"
                     
                     if not exist "%BACKUP_DIR%" mkdir "%BACKUP_DIR%"
@@ -178,9 +136,24 @@ pipeline {
                     if exist "%IIS_SITE_PATH%\\index.html" (
                         echo "💾 Creando backup en: %BACKUP_PATH%"
                         xcopy "%IIS_SITE_PATH%\\*" "%BACKUP_PATH%\\" /E /I /Y /Q
+                        echo "✅ Backup creado exitosamente"
+                    ) else (
+                        echo "ℹ️ No hay deployment previo para respaldar"
                     )
                     
-                    REM Limpiar y copiar archivos nuevos
+                    echo "🗂️ Creando directorio IIS si no existe..."
+                    if not exist "%IIS_SITE_PATH%" mkdir "%IIS_SITE_PATH%"
+                '''
+            }
+        }
+        
+        stage('Deploy a IIS') {
+            steps {
+                echo '🚀 Desplegando a IIS en Windows Server...'
+                bat '''
+                    echo "🛑 Deteniendo Application Pool (opcional)..."
+                    REM %windir%\\system32\\inetsrv\\appcmd stop apppool "DefaultAppPool" || echo "AppPool ya detenido"
+                    
                     echo "🗑️ Limpiando directorio IIS..."
                     if exist "%IIS_SITE_PATH%\\*.*" (
                         del /Q "%IIS_SITE_PATH%\\*.*"
@@ -195,52 +168,91 @@ pipeline {
                         exit /b 1
                     )
                     
-                    REM Crear archivos de información
+                    echo "📝 Creando archivos de información..."
                     echo %BUILD_VERSION% > "%IIS_SITE_PATH%\\version.txt"
                     echo %BUILD_TIMESTAMP% > "%IIS_SITE_PATH%\\build-time.txt"
                     echo Jenkins Build #%BUILD_NUMBER% > "%IIS_SITE_PATH%\\build-info.txt"
+                    echo %date% %time% >> "%IIS_SITE_PATH%\\build-info.txt"
+                    
+                    echo "🚀 Reiniciando Application Pool (opcional)..."
+                    REM %windir%\\system32\\inetsrv\\appcmd start apppool "DefaultAppPool" || echo "AppPool ya iniciado"
                     
                     echo "✅ Deployment a IIS completado"
                 '''
             }
         }
         
-        stage('Verificar y Notificar') {
-            when {
-                expression { !isUnix() }
-            }
+        stage('Verificar Deployment') {
             steps {
-                echo '🧪 Verificando deployment y notificando clientes...'
+                echo '🧪 Verificando que el deployment funcione...'
                 bat '''
-                    REM Verificar deployment
+                    echo "⏳ Esperando que IIS procese los cambios..."
                     timeout /t 3 /nobreak >nul
                     
+                    echo "🧪 Verificando acceso HTTP..."
                     powershell -Command "
                         try {
                             $response = Invoke-WebRequest -Uri 'http://localhost:2000' -UseBasicParsing -TimeoutSec 10
                             Write-Host '✅ Sitio respondiendo - Status Code:' $response.StatusCode
+                            
+                            if ($response.Content -match 'Mi App con Auto-Updates') {
+                                Write-Host '✅ Contenido de la aplicación detectado'
+                            } else {
+                                Write-Host '⚠️ Contenido no detectado, pero sitio responde'
+                            }
                         } catch {
                             Write-Host '⚠️ Error al verificar sitio:' $_.Exception.Message
+                            Write-Host 'Continuando deployment...'
                         }
+                    "
+                    
+                    echo "📝 Verificando archivos desplegados..."
+                    dir "%IIS_SITE_PATH%" /w
+                    
+                    if exist "%IIS_SITE_PATH%\\version.txt" (
+                        echo "📋 Versión desplegada:"
+                        type "%IIS_SITE_PATH%\\version.txt"
+                    )
+                '''
+            }
+        }
+        
+        stage('Notificar Clientes') {
+            steps {
+                echo '📢 Enviando notificación de nueva versión...'
+                bat '''
+                    echo "📨 Preparando notificación para WebSocket server..."
+                    
+                    powershell -Command "
+                        $notificationData = @{
+                            version = '%BUILD_VERSION%'
+                            project = '%PROJECT_NAME%'
+                            timestamp = [int64](%BUILD_TIMESTAMP%)
+                            deployedBy = 'Jenkins'
+                            buildNumber = '%BUILD_NUMBER%'
+                            message = '✅ Nueva versión desplegada en IIS Server'
+                            server = '192.168.11.7'
+                            deploymentPath = '%IIS_SITE_PATH%'
+                        } | ConvertTo-Json -Compress
                         
-                        # Enviar notificación
+                        Write-Host '📋 Enviando notificación:'
+                        Write-Host $notificationData
+                        
                         try {
-                            $notificationData = @{
-                                version = '%BUILD_VERSION%'
-                                project = '%PROJECT_NAME%'
-                                timestamp = [int64](%BUILD_TIMESTAMP%)
-                                deployedBy = 'Jenkins'
-                                buildNumber = '%BUILD_NUMBER%'
-                                message = '✅ Nueva versión desplegada en IIS Server'
-                                server = '192.168.11.7'
-                                port = 2000
-                            } | ConvertTo-Json -Compress
-                            
-                            Write-Host '📡 Enviando notificación...'
                             $response = Invoke-RestMethod -Uri '%WEBSOCKET_URL%/notify-update' -Method Post -Body $notificationData -ContentType 'application/json' -TimeoutSec 10
-                            Write-Host ('✅ Notificación enviada a ' + $response.clientsNotified + ' cliente(s)')
+                            
+                            Write-Host '📡 Respuesta del WebSocket server:'
+                            Write-Host ($response | ConvertTo-Json -Depth 3)
+                            
+                            if ($response.success -eq $true) {
+                                Write-Host ('✅ Notificación enviada exitosamente a ' + $response.clientsNotified + ' cliente(s)')
+                            } else {
+                                Write-Host '⚠️ Respuesta inesperada del servidor'
+                            }
                         } catch {
-                            Write-Host '⚠️ Error al enviar notificación:' $_.Exception.Message
+                            Write-Host '❌ Error al enviar notificación:' $_.Exception.Message
+                            Write-Host '⚠️ El deployment fue exitoso pero la notificación falló'
+                            Write-Host 'Verifica que el WebSocket server esté corriendo en puerto 6003'
                         }
                     "
                 '''
@@ -250,48 +262,103 @@ pipeline {
     
     post {
         always {
-            script {
-                if (!isUnix()) {
-                    bat '''
-                        echo "📊 Resumen del deployment:"
-                        echo "  Build Number: %BUILD_NUMBER%"
-                        echo "  Version: %BUILD_VERSION%"
-                        echo "  Sistema: Windows"
-                        echo "  Sitio: http://192.168.11.7:2000"
-                    '''
-                } else {
-                    echo "❌ Pipeline ejecutado en sistema no compatible (Unix/Linux)"
-                }
-            }
+            echo '🧹 Tareas de limpieza...'
+            bat '''
+                echo "📊 Resumen del deployment:"
+                echo "  Build Number: %BUILD_NUMBER%"
+                echo "  Version: %BUILD_VERSION%"
+                echo "  Timestamp: %BUILD_TIMESTAMP%"
+                echo "  IIS Path: %IIS_SITE_PATH%"
+                echo "  WebSocket: %WEBSOCKET_URL%"
+                
+                echo "🧹 Limpiando node_modules..."
+                if exist "node_modules" rd /s /q node_modules 2>nul
+                
+                echo "📁 Manteniendo solo los últimos 5 backups..."
+                powershell -Command "
+                    $backupPath = 'C:\\Backups\\mi-app-react'
+                    if (Test-Path $backupPath) {
+                        Get-ChildItem $backupPath | Sort-Object CreationTime -Descending | Select-Object -Skip 5 | Remove-Item -Recurse -Force -ErrorAction SilentlyContinue
+                    }
+                "
+            '''
         }
         
         success {
-            script {
-                if (!isUnix()) {
-                    echo '🎉 ¡Deployment exitoso en Windows!'
-                    bat '''
-                        echo "✅ Aplicación desplegada en: http://192.168.11.7:2000"
-                        echo "📱 Usuarios notificados automáticamente"
-                    '''
-                } else {
-                    echo "⚠️ Pipeline completado pero en sistema incorrecto"
-                }
-            }
+            echo '🎉 ¡Deployment exitoso!'
+            bat '''
+                echo "✅ La aplicación React ha sido desplegada exitosamente"
+                echo "🌐 Accesible en: http://192.168.11.7:2000"
+                echo "📱 Usuarios notificados automáticamente vía WebSocket"
+                
+                REM Enviar notificación de éxito adicional
+                powershell -Command "
+                    try {
+                        $successData = @{
+                            version = '%BUILD_VERSION%'
+                            project = '%PROJECT_NAME%'
+                            timestamp = [int64](%BUILD_TIMESTAMP%)
+                            message = '🎉 Deployment completado - Build #%BUILD_NUMBER%'
+                            status = 'success'
+                            url = 'http://192.168.11.7:2000'
+                        } | ConvertTo-Json -Compress
+                        
+                        Invoke-RestMethod -Uri '%WEBSOCKET_URL%/notify-update' -Method Post -Body $successData -ContentType 'application/json' -TimeoutSec 5 | Out-Null
+                    } catch {
+                        Write-Host 'Info: No se pudo enviar notificación adicional de éxito'
+                    }
+                "
+            '''
         }
         
         failure {
-            script {
-                if (!isUnix()) {
-                    echo '❌ Deployment falló en Windows'
-                    bat '''
-                        echo "🔍 Verificando estado del sistema..."
-                        echo "Node.js:" && node --version 2>nul || echo "No disponible"
-                        echo "IIS:" && %windir%\\system32\\inetsrv\\appcmd list sites 2>nul || echo "No disponible"
-                    '''
-                } else {
-                    echo "❌ Pipeline falló - Sistema incorrecto (requiere Windows)"
-                }
-            }
+            echo '❌ Deployment falló'
+            bat '''
+                echo "🔍 Información de debugging:"
+                
+                echo "📦 Verificando Node.js:"
+                node --version 2>nul || echo "Node.js no disponible"
+                
+                echo "🌐 Verificando IIS:"
+                %windir%\\system32\\inetsrv\\appcmd list sites 2>nul || echo "IIS no disponible"
+                
+                echo "📁 Estado del directorio IIS:"
+                if exist "%IIS_SITE_PATH%" (
+                    dir "%IIS_SITE_PATH%" /w
+                ) else (
+                    echo "Directorio IIS no existe"
+                )
+                
+                echo "💾 Intentando restaurar desde backup..."
+                set "BACKUP_DIR=C:\\Backups\\mi-app-react"
+                for /f %%i in ('dir "%BACKUP_DIR%" /b /od 2^>nul ^| findstr "build-"') do set "LATEST_BACKUP=%%i"
+                
+                if defined LATEST_BACKUP (
+                    echo "🔄 Restaurando backup: %LATEST_BACKUP%"
+                    xcopy "%BACKUP_DIR%\\%LATEST_BACKUP%\\*" "%IIS_SITE_PATH%\\" /E /I /Y /Q 2>nul
+                    echo "✅ Backup restaurado"
+                ) else (
+                    echo "⚠️ No hay backups disponibles para restaurar"
+                )
+                
+                REM Notificar el fallo
+                powershell -Command "
+                    try {
+                        $errorData = @{
+                            version = '%BUILD_VERSION%'
+                            project = '%PROJECT_NAME%'
+                            timestamp = [int64](%BUILD_TIMESTAMP%)
+                            message = '❌ Deployment falló - Build #%BUILD_NUMBER%'
+                            status = 'error'
+                            buildUrl = '%BUILD_URL%'
+                        } | ConvertTo-Json -Compress
+                        
+                        Invoke-RestMethod -Uri '%WEBSOCKET_URL%/notify-update' -Method Post -Body $errorData -ContentType 'application/json' -TimeoutSec 5 | Out-Null
+                    } catch {
+                        Write-Host 'No se pudo enviar notificación de error'
+                    }
+                "
+            '''
         }
     }
 }
