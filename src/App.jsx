@@ -1,233 +1,176 @@
-import { useState, useEffect } from 'react'
-import './App.css'
-import UpdateNotification from './components/UpdateNotification'
-import useAutoUpdate from './hooks/useAutoUpdate'
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, CircularProgress } from '@mui/material';
+import Navbar from './components/Navbar';
+import Departamentos from './components/Departamentos';
+import { useAuth } from './contexts/AuthContext';
+import Login from './components/Login';
 
 function App() {
-  const [isUpdating, setIsUpdating] = useState(false)
-  const [updateProgress, setUpdateProgress] = useState(0)
-  const [currentVersion, setCurrentVersion] = useState('1.0.0')
+  const { isAuthenticated, loading, user } = useAuth();
+  const [currentSection, setCurrentSection] = useState('inicio');
 
-  // Usar el hook de auto-actualización
-  const {
-    updateAvailable,
-    newVersion,
-    connectionStatus,
-    deploymentHistory,
-    lastUpdate,
-    forceUpdate,
-    dismissUpdate,
-    checkForUpdates
-  } = useAutoUpdate()
-
-  // Simular proceso de actualización con progreso
-  const startUpdate = async () => {
-    setIsUpdating(true)
-    setUpdateProgress(0)
-    
-    // Simular progreso de actualización
-    const interval = setInterval(() => {
-      setUpdateProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval)
-          setIsUpdating(false)
-          // Llamar a la función real de actualización
-          forceUpdate()
-          return 100
-        }
-        return prev + 10
-      })
-    }, 500)
+  // Mostrar loading mientras se verifica la autenticación
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          minHeight: '100vh',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center'
+        }}
+      >
+        <CircularProgress size={60} />
+      </Box>
+    );
   }
 
+  // Si no está autenticado, mostrar página de login
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  const renderContent = () => {
+    switch (currentSection) {
+      case 'departamentos':
+        return <Departamentos />;
+      case 'captura':
+        return (
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h4" component="h1" gutterBottom>
+              Captura de Datos
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Módulo de captura de datos en desarrollo...
+            </Typography>
+          </Box>
+        );
+      case 'configuracion':
+        return (
+          <Box sx={{ p: 3 }}>
+            <Typography variant="h4" component="h1" gutterBottom>
+              Configuración
+            </Typography>
+            <Typography variant="body1" color="text.secondary">
+              Módulo de configuración en desarrollo...
+            </Typography>
+          </Box>
+        );
+      case 'inicio':
+      default:
+        return <SimpleExample user={user} />;
+    }
+  };
+
+  // Si está autenticado, mostrar la aplicación principal
   return (
-    <div className="app">
-      <div className="container">
-        {/* Header */}
-        <header className="header">
-          <h1 className="title">Aplicación esto que es?</h1>
-          <p className="subtitle">Sistema de gestión con actualizaciones automáticas</p>
-        </header>
+    <Box sx={{ flexGrow: 1 }}>
+      <Navbar currentSection={currentSection} onSectionChange={setCurrentSection} />
+      {renderContent()}
+    </Box>
+  );
+}
 
-        {/* Main Content */}
-        <main className="grid">
-          {/* Estado de la Aplicación */}
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">📊 Estado de la Aplicación</h2>
-            </div>
-            <div className="card-body">
-              <div className="status-list">
-                <div className="status-item">
-                  <span className="status-label">Versión Actual:</span>
-                  <span className="status status-info">{currentVersion}</span>
-                </div>
-                <div className="status-item">
-                  <span className="status-label">Conexión WebSocket:</span>
-                  <span className={`status ${
-                    connectionStatus === 'connected' ? 'status-success' : 
-                    connectionStatus === 'error' ? 'status-error' : 'status-warning'
-                  }`}>
-                    {connectionStatus === 'connected' ? 'Conectado' : 
-                     connectionStatus === 'error' ? 'Error' : 'Desconectado'}
-                  </span>
-                </div>
-                <div className="status-item">
-                  <span className="status-label">Última Verificación:</span>
-                  <span className="status-label">
-                    {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Nunca'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          </div>
+// Componente de ejemplo simple
+function SimpleExample({ user }) {
+  return (
+    <Box sx={{ p: 3 }}>
+      <Typography variant="h4" component="h1" gutterBottom>
+        ¡Bienvenido, {user?.firstName || user?.usuario}!
+      </Typography>
+      <Typography variant="h6" color="text.secondary" gutterBottom>
+        Departamento: {user?.departamento}
+      </Typography>
+      <Typography variant="body1" color="text.secondary" gutterBottom>
+        Rol: {user?.rol}
+      </Typography>
+      <Typography variant="body2" color="text.secondary" gutterBottom>
+        Email: {user?.email}
+      </Typography>
+      
+      <Typography variant="h5" sx={{ mt: 4, mb: 2 }}>
+        Ejemplo Simple
+      </Typography>
+      
+      <Box 
+        sx={{
+          maxWidth: 600,
+          width: '100%',
+          display: 'flex',
+          gap: '20px',
+          mt: 3,
+          mx: 'auto',
+          padding: 2
+        }}
+      >
+        {/* Elemento 1 */}
+        <Box
+          sx={{
+            width: 180,
+            height: 180,
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#3b82f6',
+            color: 'white',
+            fontSize: '24px',
+            fontWeight: 'bold'
+          }}
+        >
+          <Typography variant="h4" component="div" sx={{ fontSize: 'inherit', color: 'inherit' }}>
+            Elemento 1
+          </Typography>
+        </Box>
 
-          {/* Gestión de Actualizaciones */}
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">🔄 Gestión de Actualizaciones</h2>
-            </div>
-            <div className="card-body">
-              <div className="form-group">
-                <button 
-                  className="button button-primary w-full mb-2"
-                  onClick={checkForUpdates}
-                  disabled={isUpdating}
-                >
-                  Verificar Actualizaciones
-                </button>
-                
-                {updateAvailable && (
-                  <button 
-                    className="button button-success w-full"
-                    onClick={startUpdate}
-                    disabled={isUpdating}
-                  >
-                    {isUpdating ? 'Actualizando...' : 'Instalar Actualización'}
-                  </button>
-                )}
-              </div>
-              
-              {isUpdating && (
-                <div className="form-group">
-                  <label className="label">Progreso de Actualización:</label>
-                  <div className="progress">
-                    <div 
-                      className="progress-bar" 
-                      style={{ width: `${updateProgress}%` }}
-                    ></div>
-                  </div>
-                  <p className="text-center mt-2">{updateProgress}%</p>
-                </div>
-              )}
-            </div>
-          </div>
+        {/* Elemento 2 */}
+        <Box
+          sx={{
+            width: 180,
+            height: 180,
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#ef4444',
+            color: 'white',
+            fontSize: '24px',
+            fontWeight: 'bold'
+          }}
+        >
+          <Typography variant="h4" component="div" sx={{ fontSize: 'inherit', color: 'inherit' }}>
+            Elemento 2
+          </Typography>
+        </Box>
 
-          {/* Información del Sistema */}
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">⚙️ Información del Sistema</h2>
-            </div>
-            <div className="card-body">
-              <div className="status-list">
-                <div className="status-item">
-                  <span className="status-label">Plataforma:</span>
-                  <span className="status status-info">Web</span>
-                </div>
-                <div className="status-item">
-                  <span className="status-label">Navegador:</span>
-                  <span className="status-label">{navigator.userAgent.split(' ')[0]}</span>
-                </div>
-                <div className="status-item">
-                  <span className="status-label">Conexión:</span>
-                  <span className="status status-success">Estable</span>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Configuración */}
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">🛠️ Configuración</h2>
-            </div>
-            <div className="card-body">
-              <div className="form-group">
-                <label className="label">Actualizaciones Automáticas:</label>
-                <button className="button button-secondary w-full mb-2">
-                  Habilitado
-                </button>
-              </div>
-              
-              <div className="form-group">
-                <label className="label">Notificaciones:</label>
-                <button className="button button-secondary w-full mb-2">
-                  Activadas
-                </button>
-              </div>
-              
-              <div className="form-group">
-                <label className="label">Canal de Actualizaciones:</label>
-                <button className="button button-secondary w-full">
-                  Estable
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Historial de Actualizaciones */}
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">📋 Historial de Actualizaciones</h2>
-            </div>
-            <div className="card-body">
-              <div className="update-history">
-                <div className="update-item mb-4">
-                  <div className="flex justify-between items-center mb-2">
-                    <span className="font-weight-600">v1.0.0</span>
-                    <span className="status status-success">Instalada</span>
-                  </div>
-                  <p className="text-sm text-gray-600">Versión inicial de la aplicación</p>
-                  <p className="text-xs text-gray-500 mt-1">Instalada: Hoy</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Acciones Rápidas */}
-          <div className="card">
-            <div className="card-header">
-              <h2 className="card-title">⚡ Acciones Rápidas</h2>
-            </div>
-            <div className="card-body">
-              <div className="button-list">
-                <button className="button button-primary mb-2">
-                  🔄 Reiniciar Aplicación
-                </button>
-                <button className="button button-secondary mb-2">
-                  🧹 Limpiar Caché
-                </button>
-                <button className="button button-secondary mb-2">
-                  📊 Ver Logs
-                </button>
-                <button className="button button-danger">
-                  🔧 Restablecer Configuración
-                </button>
-              </div>
-            </div>
-          </div>
-        </main>
-
-        {/* Componente de Notificación de Actualización */}
-        <UpdateNotification 
-          isVisible={updateAvailable && !isUpdating}
-          message={newVersion}
-          onUpdate={startUpdate}
-          onDismiss={dismissUpdate}
-        />
-      </div>
-    </div>
-  )
+        {/* Elemento 3 */}
+        <Box
+          sx={{
+            width: 180,
+            height: 180,
+            borderRadius: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            backgroundColor: '#10b981',
+            color: 'white',
+            fontSize: '24px',
+            fontWeight: 'bold'
+          }}
+        >
+          <Typography variant="h4" component="div" sx={{ fontSize: 'inherit', color: 'inherit' }}>
+            Elemento 3
+          </Typography>
+        </Box>
+      </Box>
+      
+      <Box sx={{ mt: 3, p: 2, borderRadius: 2, backgroundColor: 'action.hover', textAlign: 'center' }}>
+        <Typography variant="body2" color="text.secondary">
+          ✨ Ejemplo simple sin funcionalidad de arrastre
+        </Typography>
+      </Box>
+    </Box>
+  );
 }
 
 export default App

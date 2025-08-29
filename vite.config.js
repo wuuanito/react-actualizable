@@ -7,7 +7,14 @@ export default defineConfig({
   server: {
     port: 3000,
     host: true, // Para acceder desde red interna
-    open: true
+    open: true,
+    proxy: {
+      '/api': {
+        target: 'http://192.168.11.7:6000',
+        changeOrigin: true,
+        secure: false
+      }
+    }
   },
   build: {
     outDir: 'dist',
