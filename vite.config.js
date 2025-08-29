@@ -10,12 +10,10 @@ export default defineConfig({
     open: true,
     proxy: {
       '/api': {
-        target: 'http://192.168.11.7:6000',
+        target: 'http://192.168.11.7:8000',
         changeOrigin: true,
-        secure: false
-      }
-    }
-  },
+        secure: false,
+      },
   build: {
     outDir: 'dist',
     sourcemap: false,
@@ -24,5 +22,7 @@ export default defineConfig({
   define: {
     // Variables de entorno para producción
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
+  }
+    }
   }
 })
