@@ -56,7 +56,7 @@ npm install
 
 # Configurar variables de entorno
 # Editar .env con la URL del WebSocket
-VITE_WEBSOCKET_URL=ws://192.168.11.7:8000/ws
+VITE_WEBSOCKET_URL=ws://192.168.11.7:3010/ws
 
 # Ejecutar en desarrollo
 npm run dev
