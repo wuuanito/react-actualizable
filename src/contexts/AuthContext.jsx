@@ -36,8 +36,14 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (usuario, password) => {
     try {
-      // Usar proxy local para evitar ERR_UNSAFE_PORT
-      const apiUrl = '/api/auth/v1/login';
+      // Usar variable de entorno para la URL de la API
+      const apiUrl = import.meta.env.VITE_API_URL || '/api/auth/v1/login';
+      
+      console.log('🔍 Intentando login con:', {
+        apiUrl,
+        usuario,
+        environment: import.meta.env.MODE
+      });
       
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -48,8 +54,17 @@ export const AuthProvider = ({ children }) => {
         mode: 'cors',
       });
 
+      console.log('📡 Respuesta del servidor:', {
+        status: response.status,
+        statusText: response.statusText,
+        ok: response.ok,
+        url: response.url
+      });
+
       if (!response.ok) {
-        throw new Error('Credenciales inválidas');
+        const errorText = await response.text();
+        console.error('❌ Error del servidor:', errorText);
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
       }
 
       const data = await response.json();
