@@ -45,7 +45,7 @@ function App() {
       <div className="container">
         {/* Header */}
         <header className="header">
-          <h1 className="title">Aplicación Actualizable</h1>
+          <h1 className="title">Aplicación esto que es?</h1>
           <p className="subtitle">Sistema de gestión con actualizaciones automáticas</p>
         </header>
 
