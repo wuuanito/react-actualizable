@@ -13,11 +13,6 @@ export default defineConfig({
         target: 'http://192.168.11.7:3010',
         changeOrigin: true,
         secure: false,
-      },
-      '/socket.io': {
-        target: 'http://192.168.11.7:3010',
-        changeOrigin: true,
-        secure: false,
         ws: true, // Habilitar proxy para WebSocket
       }
     }

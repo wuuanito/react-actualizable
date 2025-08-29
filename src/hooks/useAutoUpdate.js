@@ -1,11 +1,12 @@
 import { useEffect, useState, useCallback } from 'react';
 import io from 'socket.io-client';
 
-// Configuración de endpoints usando variables de Vite
+// URLs base
 const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.11.7:3010/api';
-// Socket.IO requiere URL HTTP base del servidor
-const SOCKETIO_URL = import.meta.env.VITE_SOCKETIO_URL || 'http://192.168.11.7:3010';
-// Endpoints específicos
+const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL || 'http://192.168.11.7:3010';
+// Usar el endpoint del API Gateway para Socket.IO
+const SOCKETIO_URL = `${API_URL}/websocket/v1`;
+// Endpoints específicos - usando las rutas correctas del API Gateway
 const HEALTH_ENDPOINT = `${API_URL}/websocket/v1/health`;
 const STATS_ENDPOINT = `${API_URL}/websocket/v1/stats`;
 const LATEST_VERSION_ENDPOINT = `${API_URL}/websocket/v1/latest-version`;
