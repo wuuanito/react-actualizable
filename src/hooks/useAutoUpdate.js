@@ -5,7 +5,7 @@ import io from 'socket.io-client';
 const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.11.7:3010/api';
 const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL || 'http://192.168.11.7:3010';
 // Usar el proxy de Vite para Socket.IO en desarrollo
-const SOCKETIO_URL = import.meta.env.DEV ? '/' : (import.meta.env.VITE_SOCKETIO_URL || 'http://192.168.11.7:6003');
+const SOCKETIO_URL = import.meta.env.DEV ? '/' : (import.meta.env.VITE_SOCKETIO_URL || 'http://192.168.11.7:3010');
 // Endpoints específicos - usando las rutas correctas del API Gateway
 const HEALTH_ENDPOINT = `${API_URL}/websocket/v1/health`;
 const STATS_ENDPOINT = `${API_URL}/websocket/v1/stats`;
