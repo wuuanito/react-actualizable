@@ -1,8 +1,14 @@
 import { useEffect, useState, useCallback } from 'react';
 import io from 'socket.io-client';
 
-// Configuración del WebSocket usando variables de Vite
-const WEBSOCKET_URL = import.meta.env.VITE_WEBSOCKET_URL || 'ws://192.168.11.7:3010/ws';
+// Configuración de endpoints usando variables de Vite
+const API_URL = import.meta.env.VITE_API_URL || 'http://192.168.11.7:3010/api';
+// Socket.IO requiere URL HTTP base del servidor
+const SOCKETIO_URL = import.meta.env.VITE_SOCKETIO_URL || 'http://192.168.11.7:3010';
+// Endpoints específicos
+const HEALTH_ENDPOINT = `${API_URL}/websocket/v1/health`;
+const STATS_ENDPOINT = `${API_URL}/websocket/v1/stats`;
+const LATEST_VERSION_ENDPOINT = `${API_URL}/websocket/v1/latest-version`;
 
 const useAutoUpdate = () => {
     const [updateAvailable, setUpdateAvailable] = useState(false);
@@ -43,10 +49,23 @@ const useAutoUpdate = () => {
         setNewVersion(null);
     }, []);
 
+    // Función para verificar el health del servidor WebSocket
+    const checkServerHealth = useCallback(async () => {
+        try {
+            const response = await fetch(HEALTH_ENDPOINT);
+            const data = await response.json();
+            console.log('🏥 Health check del servidor:', data);
+            return data.status === 'ok';
+        } catch (error) {
+            console.error('❌ Error en health check:', error);
+            return false;
+        }
+    }, []);
+
     // Función para verificar versión manualmente
     const checkForUpdates = useCallback(async () => {
         try {
-            const response = await fetch(`${WEBSOCKET_URL}/latest-version`);
+            const response = await fetch(LATEST_VERSION_ENDPOINT);
             const data = await response.json();
             console.log('🔍 Verificando versión:', data);
             
@@ -70,34 +89,48 @@ const useAutoUpdate = () => {
     }, []);
 
     useEffect(() => {
-        console.log('🔌 Conectando a WebSocket:', WEBSOCKET_URL);
-        
-        const socket = io(WEBSOCKET_URL, {
-            transports: ['websocket', 'polling'],
-            timeout: 5000,
-            reconnection: true,
-            reconnectionDelay: 1000,
-            reconnectionAttempts: 5
-        });
+        const initializeConnection = async () => {
+            // Verificar health del servidor antes de conectar
+            const isServerHealthy = await checkServerHealth();
+            if (!isServerHealthy) {
+                console.warn('⚠️ Servidor no disponible, reintentando en 5 segundos...');
+                setConnectionStatus('error');
+                setTimeout(initializeConnection, 5000);
+                return;
+            }
+
+            console.log('🔌 Conectando a Socket.IO:', SOCKETIO_URL);
+            
+            const socket = io(SOCKETIO_URL, {
+                transports: ['websocket', 'polling'],
+                timeout: 5000,
+                reconnection: true,
+                reconnectionDelay: 1000,
+                reconnectionDelayMax: 5000,
+                reconnectionAttempts: 5,
+                maxReconnectionAttempts: 5,
+                forceNew: false,
+                upgrade: true
+            });
 
         // Eventos de conexión
         socket.on('connect', () => {
-            console.log('✅ Conectado al servidor WebSocket');
+            console.log('✅ Conectado al servidor Socket.IO');
             setConnectionStatus('connected');
         });
 
         socket.on('disconnect', (reason) => {
-            console.log('❌ Desconectado del servidor WebSocket:', reason);
+            console.log('❌ Desconectado del servidor Socket.IO:', reason);
             setConnectionStatus('disconnected');
         });
 
         socket.on('connect_error', (error) => {
-            console.error('❌ Error de conexión:', error);
+            console.error('❌ Error de conexión Socket.IO:', error);
             setConnectionStatus('error');
         });
 
         socket.on('reconnect', () => {
-            console.log('🔄 Reconectado al servidor WebSocket');
+            console.log('🔄 Reconectado al servidor Socket.IO');
             setConnectionStatus('connected');
         });
 
@@ -124,20 +157,24 @@ const useAutoUpdate = () => {
             setDeploymentHistory(history);
         });
 
-        // Cleanup al desmontar
-        return () => {
-            console.log('🧹 Desconectando WebSocket...');
-            socket.disconnect();
+            // Cleanup al desmontar
+            return () => {
+                console.log('🧹 Desconectando Socket.IO...');
+                socket.disconnect();
+            };
         };
-    }, []);
+
+        // Inicializar la conexión
+        initializeConnection();
+    }, [checkServerHealth]);
 
     // Verificar actualizaciones automáticamente al cargar y periódicamente
     useEffect(() => {
         // Verificar inmediatamente al cargar
         checkForUpdates();
         
-        // Verificar cada 30 segundos
-        const interval = setInterval(checkForUpdates, 30000);
+        // Verificar cada 10 segundos para mayor tiempo real
+        const interval = setInterval(checkForUpdates, 10000);
         
         return () => clearInterval(interval);
     }, [checkForUpdates]);

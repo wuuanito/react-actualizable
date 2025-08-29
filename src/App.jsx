@@ -2,12 +2,23 @@ import React, { useState, useEffect } from 'react';
 import { Box, Typography, CircularProgress } from '@mui/material';
 import Navbar from './components/Navbar';
 import Departamentos from './components/Departamentos';
+import UpdateNotification from './components/UpdateNotification';
 import { useAuth } from './contexts/AuthContext';
+import useAutoUpdate from './hooks/useAutoUpdate';
 import Login from './components/Login';
 
 function App() {
   const { isAuthenticated, loading, user } = useAuth();
   const [currentSection, setCurrentSection] = useState('inicio');
+  
+  // Hook para actualizaciones en tiempo real
+  const {
+    updateAvailable,
+    newVersion,
+    connectionStatus,
+    forceUpdate,
+    dismissUpdate
+  } = useAutoUpdate();
 
   // Mostrar loading mientras se verifica la autenticación
   if (loading) {
@@ -65,8 +76,21 @@ function App() {
   // Si está autenticado, mostrar la aplicación principal
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Navbar currentSection={currentSection} onSectionChange={setCurrentSection} />
+      <Navbar 
+        currentSection={currentSection} 
+        onSectionChange={setCurrentSection}
+        connectionStatus={connectionStatus}
+      />
       {renderContent()}
+      
+      {/* Notificación de actualización en tiempo real */}
+      <UpdateNotification
+        isVisible={updateAvailable}
+        version={newVersion}
+        notes={newVersion?.notes || 'Nueva versión disponible con mejoras y correcciones.'}
+        onDismiss={dismissUpdate}
+        onUpdate={forceUpdate}
+      />
     </Box>
   );
 }

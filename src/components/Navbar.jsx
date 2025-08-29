@@ -35,11 +35,39 @@ import {
   Settings as SettingsIcon,
   ExpandLess,
   ExpandMore,
-  Close as CloseIcon
+  Close as CloseIcon,
+  Wifi as WifiIcon,
+  WifiOff as WifiOffIcon,
+  Circle as CircleIcon
 } from '@mui/icons-material';
 import { styled } from '@mui/material/styles';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+
+// Agregar estilos CSS para la animación de pulso
+const pulseKeyframes = `
+  @keyframes pulse {
+    0% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.7;
+      transform: scale(1.1);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+`;
+
+// Inyectar los estilos CSS
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = pulseKeyframes;
+  document.head.appendChild(style);
+}
 
 // Styled components para el campo de búsqueda
 const Search = styled('div')(({ theme }) => ({
@@ -82,7 +110,7 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
   },
 }));
 
-const Navbar = ({ currentSection = 'inicio', onSectionChange }) => {
+const Navbar = ({ currentSection = 'inicio', onSectionChange, connectionStatus = 'disconnected' }) => {
   const [searchValue, setSearchValue] = useState('');
   const { darkMode, toggleDarkMode } = useTheme();
   const { user, logout } = useAuth();
@@ -507,6 +535,45 @@ const Navbar = ({ currentSection = 'inicio', onSectionChange }) => {
             >
               {darkMode ? <LightModeIcon /> : <DarkModeIcon />}
             </IconButton>
+            
+            {/* Indicador de conexión en tiempo real */}
+            <Box
+              sx={{
+                display: { xs: 'none', sm: 'flex' },
+                alignItems: 'center',
+                gap: 0.5,
+                px: 1,
+                py: 0.5,
+                borderRadius: 1,
+                backgroundColor: connectionStatus === 'connected' 
+                  ? 'rgba(76, 175, 80, 0.1)' 
+                  : 'rgba(244, 67, 54, 0.1)',
+                border: connectionStatus === 'connected'
+                  ? '1px solid rgba(76, 175, 80, 0.3)'
+                  : '1px solid rgba(244, 67, 54, 0.3)'
+              }}
+            >
+              <CircleIcon
+                sx={{
+                  fontSize: '8px',
+                  color: connectionStatus === 'connected' ? '#4caf50' : '#f44336',
+                  animation: connectionStatus === 'connected' 
+                    ? 'pulse 2s infinite' 
+                    : 'none'
+                }}
+              />
+              <Typography
+                variant="caption"
+                sx={{
+                  fontSize: '0.7rem',
+                  color: connectionStatus === 'connected' ? '#4caf50' : '#f44336',
+                  fontWeight: 500
+                }}
+              >
+                {connectionStatus === 'connected' ? 'En línea' : 'Desconectado'}
+              </Typography>
+            </Box>
+            
             <IconButton 
               size="large" 
               aria-label="show notifications" 

@@ -24,25 +24,27 @@ import {
 } from '@mui/icons-material';
 
 const UpdateNotification = ({ isVisible, version, notes, onDismiss, onUpdate }) => {
-  const [countdown, setCountdown] = useState(10);
+  const [countdown, setCountdown] = useState(30);
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(false);
 
   useEffect(() => {
-    if (!isVisible || !autoUpdateEnabled) return;
+    // Auto-update countdown
+    if (isVisible && autoUpdateEnabled) {
+      const timer = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            onUpdate();
+            return 30; // Reducido a 30 segundos para mayor tiempo real
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
-    const timer = setInterval(() => {
-      setCountdown(prev => {
-        if (prev <= 1) {
-          // Auto-update functionality would go here
-          // For now, just reset countdown
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [isVisible, autoUpdateEnabled]);
+      return () => clearInterval(timer);
+    } else {
+      setCountdown(30); // Reset countdown cuando no está activo
+    }
+  }, [isVisible, autoUpdateEnabled, onUpdate]);
 
   return (
     <Dialog 
@@ -143,7 +145,7 @@ const UpdateNotification = ({ isVisible, version, notes, onDismiss, onUpdate }) 
                       checked={autoUpdateEnabled}
                       onChange={(e) => {
                         setAutoUpdateEnabled(e.target.checked);
-                        if (e.target.checked) setCountdown(10);
+                        if (e.target.checked) setCountdown(30);
                       }}
                       color="primary"
                     />
@@ -157,7 +159,7 @@ const UpdateNotification = ({ isVisible, version, notes, onDismiss, onUpdate }) 
                 <Box>
                   <LinearProgress 
                     variant="determinate" 
-                    value={(11 - countdown) * 10}
+                    value={((31 - countdown) / 30) * 100}
                     sx={{ height: 6, borderRadius: 3 }}
                   />
                 </Box>
