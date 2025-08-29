@@ -102,7 +102,7 @@ const useAutoUpdate = () => {
             console.log('🔌 Conectando a Socket.IO:', SOCKETIO_URL);
             
             const socket = io(SOCKETIO_URL, {
-                transports: ['websocket', 'polling'],
+                transports: ['polling'], // Solo usar polling para evitar errores de WebSocket
                 timeout: 5000,
                 reconnection: true,
                 reconnectionDelay: 1000,
@@ -110,7 +110,7 @@ const useAutoUpdate = () => {
                 reconnectionAttempts: 5,
                 maxReconnectionAttempts: 5,
                 forceNew: false,
-                upgrade: true
+                upgrade: false // Desactivar upgrade a WebSocket
             });
 
         // Eventos de conexión

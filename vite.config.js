@@ -14,6 +14,14 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
       },
+      '/socket.io': {
+        target: 'http://192.168.11.7:3010',
+        changeOrigin: true,
+        secure: false,
+        ws: true, // Habilitar proxy para WebSocket
+      }
+    }
+  },
   build: {
     outDir: 'dist',
     sourcemap: false,
@@ -22,7 +30,5 @@ export default defineConfig({
   define: {
     // Variables de entorno para producción
     __APP_VERSION__: JSON.stringify(process.env.npm_package_version),
-  }
-    }
   }
 })
