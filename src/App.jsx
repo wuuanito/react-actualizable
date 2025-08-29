@@ -1,208 +1,233 @@
-import React, { useState } from 'react';
-import { 
-  Layout, 
-  Card, 
-  Button, 
-  Switch, 
-  Typography, 
-  Space, 
-  Row, 
-  Col, 
-  Tag, 
-  Steps, 
-  Badge,
-  ConfigProvider,
-  theme
-} from 'antd';
-import { 
-  SunOutlined, 
-  MoonOutlined, 
-  ReloadOutlined, 
-  BarChartOutlined, 
-  SettingOutlined,
-  CheckCircleOutlined,
-  ClockCircleOutlined,
-  SyncOutlined
-} from '@ant-design/icons';
-import useAutoUpdate from './hooks/useAutoUpdate';
-import UpdateNotification from './components/UpdateNotification';
-
-const { Header, Content } = Layout;
-const { Title, Text } = Typography;
-const { Step } = Steps;
+import { useState, useEffect } from 'react'
+import './App.css'
+import UpdateNotification from './components/UpdateNotification'
+import useAutoUpdate from './hooks/useAutoUpdate'
 
 function App() {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-  const { isUpdateAvailable, updateMessage, checkForUpdates } = useAutoUpdate();
+  const [isUpdating, setIsUpdating] = useState(false)
+  const [updateProgress, setUpdateProgress] = useState(0)
+  const [currentVersion, setCurrentVersion] = useState('1.0.0')
 
-  const toggleTheme = () => {
-    setIsDarkMode(!isDarkMode);
-  };
+  // Usar el hook de auto-actualización
+  const {
+    updateAvailable,
+    newVersion,
+    connectionStatus,
+    deploymentHistory,
+    lastUpdate,
+    forceUpdate,
+    dismissUpdate,
+    checkForUpdates
+  } = useAutoUpdate()
 
-  const processSteps = [
-    {
-      title: '1. Commit',
-      description: 'Push al repositorio',
-      icon: '📝'
-    },
-    {
-      title: '2. Build', 
-      description: 'Jenkins construye',
-      icon: '🔨'
-    },
-    {
-      title: '3. Deploy',
-      description: 'Despliegue automático', 
-      icon: '🚀'
-    },
-    {
-      title: '4. Notifica',
-      description: 'Actualización automática',
-      icon: '🔔'
-    }
-  ];
+  // Simular proceso de actualización con progreso
+  const startUpdate = async () => {
+    setIsUpdating(true)
+    setUpdateProgress(0)
+    
+    // Simular progreso de actualización
+    const interval = setInterval(() => {
+      setUpdateProgress(prev => {
+        if (prev >= 100) {
+          clearInterval(interval)
+          setIsUpdating(false)
+          // Llamar a la función real de actualización
+          forceUpdate()
+          return 100
+        }
+        return prev + 10
+      })
+    }, 500)
+  }
 
   return (
-    <ConfigProvider
-      theme={{
-        algorithm: isDarkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
-      }}
-    >
-      <Layout style={{ minHeight: '100vh' }}>
-        <Header style={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center',
-          padding: '0 24px'
-        }}>
-          <Title level={3} style={{ color: 'white', margin: 0 }}>
-            🚀 Sistema de Actualizaciones Automáticas
-          </Title>
-          <Space>
-            <SunOutlined style={{ color: 'white' }} />
-            <Switch 
-              checked={isDarkMode}
-              onChange={toggleTheme}
-              checkedChildren={<MoonOutlined />}
-              unCheckedChildren={<SunOutlined />}
-            />
-            <MoonOutlined style={{ color: 'white' }} />
-          </Space>
-        </Header>
+    <div className="app">
+      <div className="container">
+        {/* Header */}
+        <header className="header">
+          <h1 className="title">Aplicación Actualizable</h1>
+          <p className="subtitle">Sistema de gestión con actualizaciones automáticas</p>
+        </header>
 
-        <Content style={{ padding: '24px' }}>
-          <Row gutter={[24, 24]}>
-            {/* Card de bienvenida */}
-            <Col xs={24} lg={12}>
-              <Card 
-                title="¡Hola Mundo!" 
-                extra={<Badge status="success" text="Activo" />}
-                style={{ height: '100%' }}
-              >
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Text>
-                    Bienvenido al sistema de actualizaciones automáticas con Jenkins y WebSockets.
-                  </Text>
-                  <Space wrap>
-                    <Tag color="blue">React</Tag>
-                    <Tag color="green">Jenkins</Tag>
-                    <Tag color="purple">WebSocket</Tag>
-                    <Tag color="orange">Ant Design</Tag>
-                  </Space>
-                </Space>
-              </Card>
-            </Col>
+        {/* Main Content */}
+        <main className="grid">
+          {/* Estado de la Aplicación */}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title">📊 Estado de la Aplicación</h2>
+            </div>
+            <div className="card-body">
+              <div className="status-list">
+                <div className="status-item">
+                  <span className="status-label">Versión Actual:</span>
+                  <span className="status status-info">{currentVersion}</span>
+                </div>
+                <div className="status-item">
+                  <span className="status-label">Conexión WebSocket:</span>
+                  <span className={`status ${
+                    connectionStatus === 'connected' ? 'status-success' : 
+                    connectionStatus === 'error' ? 'status-error' : 'status-warning'
+                  }`}>
+                    {connectionStatus === 'connected' ? 'Conectado' : 
+                     connectionStatus === 'error' ? 'Error' : 'Desconectado'}
+                  </span>
+                </div>
+                <div className="status-item">
+                  <span className="status-label">Última Verificación:</span>
+                  <span className="status-label">
+                    {lastUpdate ? lastUpdate.toLocaleTimeString() : 'Nunca'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
 
-            {/* Card de estado del sistema */}
-            <Col xs={24} lg={12}>
-              <Card title="Estado del Sistema" style={{ height: '100%' }}>
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Row justify="space-between">
-                    <Text>Estado del servidor:</Text>
-                    <Badge status="processing" text="Conectado" />
-                  </Row>
-                  <Row justify="space-between">
-                    <Text>Última actualización:</Text>
-                    <Text type="secondary">Hace 2 minutos</Text>
-                  </Row>
-                  <Row justify="space-between">
-                    <Text>Versión actual:</Text>
-                    <Tag color="green">v1.0.0</Tag>
-                  </Row>
-                  <Row justify="space-between">
-                    <Text>Notificaciones:</Text>
-                    <Badge status="success" text="Habilitadas" />
-                  </Row>
-                </Space>
-              </Card>
-            </Col>
-
-            {/* Card de acciones */}
-            <Col xs={24} lg={8}>
-              <Card title="Acciones Rápidas">
-                <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-                  <Button 
-                    type="primary" 
-                    icon={<ReloadOutlined />} 
-                    block
-                    onClick={checkForUpdates}
+          {/* Gestión de Actualizaciones */}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title">🔄 Gestión de Actualizaciones</h2>
+            </div>
+            <div className="card-body">
+              <div className="form-group">
+                <button 
+                  className="button button-primary w-full mb-2"
+                  onClick={checkForUpdates}
+                  disabled={isUpdating}
+                >
+                  Verificar Actualizaciones
+                </button>
+                
+                {updateAvailable && (
+                  <button 
+                    className="button button-success w-full"
+                    onClick={startUpdate}
+                    disabled={isUpdating}
                   >
-                    Verificar Actualizaciones
-                  </Button>
-                  <Button 
-                    type="default" 
-                    icon={<BarChartOutlined />} 
-                    block
-                  >
-                    Ver Estadísticas
-                  </Button>
-                  <Button 
-                    type="default" 
-                    icon={<SettingOutlined />} 
-                    block
-                  >
-                    Configuración
-                  </Button>
-                </Space>
-              </Card>
-            </Col>
+                    {isUpdating ? 'Actualizando...' : 'Instalar Actualización'}
+                  </button>
+                )}
+              </div>
+              
+              {isUpdating && (
+                <div className="form-group">
+                  <label className="label">Progreso de Actualización:</label>
+                  <div className="progress">
+                    <div 
+                      className="progress-bar" 
+                      style={{ width: `${updateProgress}%` }}
+                    ></div>
+                  </div>
+                  <p className="text-center mt-2">{updateProgress}%</p>
+                </div>
+              )}
+            </div>
+          </div>
 
-            {/* Card de proceso */}
-            <Col xs={24} lg={16}>
-              <Card title="¿Cómo funciona el sistema?">
-                <Row gutter={[16, 16]}>
-                  {processSteps.map((step, index) => (
-                    <Col xs={12} md={6} key={index}>
-                      <Card 
-                        size="small" 
-                        style={{ textAlign: 'center', height: '100%' }}
-                        bodyStyle={{ padding: '16px' }}
-                      >
-                        <div style={{ fontSize: '32px', marginBottom: '8px' }}>
-                          {step.icon}
-                        </div>
-                        <Title level={5} style={{ margin: '8px 0 4px 0' }}>
-                          {step.title}
-                        </Title>
-                        <Text type="secondary" style={{ fontSize: '12px' }}>
-                          {step.description}
-                        </Text>
-                      </Card>
-                    </Col>
-                  ))}
-                </Row>
-              </Card>
-            </Col>
-          </Row>
-        </Content>
+          {/* Información del Sistema */}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title">⚙️ Información del Sistema</h2>
+            </div>
+            <div className="card-body">
+              <div className="status-list">
+                <div className="status-item">
+                  <span className="status-label">Plataforma:</span>
+                  <span className="status status-info">Web</span>
+                </div>
+                <div className="status-item">
+                  <span className="status-label">Navegador:</span>
+                  <span className="status-label">{navigator.userAgent.split(' ')[0]}</span>
+                </div>
+                <div className="status-item">
+                  <span className="status-label">Conexión:</span>
+                  <span className="status status-success">Estable</span>
+                </div>
+              </div>
+            </div>
+          </div>
 
+          {/* Configuración */}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title">🛠️ Configuración</h2>
+            </div>
+            <div className="card-body">
+              <div className="form-group">
+                <label className="label">Actualizaciones Automáticas:</label>
+                <button className="button button-secondary w-full mb-2">
+                  Habilitado
+                </button>
+              </div>
+              
+              <div className="form-group">
+                <label className="label">Notificaciones:</label>
+                <button className="button button-secondary w-full mb-2">
+                  Activadas
+                </button>
+              </div>
+              
+              <div className="form-group">
+                <label className="label">Canal de Actualizaciones:</label>
+                <button className="button button-secondary w-full">
+                  Estable
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Historial de Actualizaciones */}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title">📋 Historial de Actualizaciones</h2>
+            </div>
+            <div className="card-body">
+              <div className="update-history">
+                <div className="update-item mb-4">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-weight-600">v1.0.0</span>
+                    <span className="status status-success">Instalada</span>
+                  </div>
+                  <p className="text-sm text-gray-600">Versión inicial de la aplicación</p>
+                  <p className="text-xs text-gray-500 mt-1">Instalada: Hoy</p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Acciones Rápidas */}
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title">⚡ Acciones Rápidas</h2>
+            </div>
+            <div className="card-body">
+              <div className="button-list">
+                <button className="button button-primary mb-2">
+                  🔄 Reiniciar Aplicación
+                </button>
+                <button className="button button-secondary mb-2">
+                  🧹 Limpiar Caché
+                </button>
+                <button className="button button-secondary mb-2">
+                  📊 Ver Logs
+                </button>
+                <button className="button button-danger">
+                  🔧 Restablecer Configuración
+                </button>
+              </div>
+            </div>
+          </div>
+        </main>
+
+        {/* Componente de Notificación de Actualización */}
         <UpdateNotification 
-          isVisible={isUpdateAvailable}
-          message={updateMessage}
+          isVisible={updateAvailable && !isUpdating}
+          message={newVersion}
+          onUpdate={startUpdate}
+          onDismiss={dismissUpdate}
         />
-      </Layout>
-    </ConfigProvider>
-  );
+      </div>
+    </div>
+  )
 }
 
-export default App;
+export default App

@@ -15,6 +15,11 @@ const useAutoUpdate = () => {
     const forceUpdate = useCallback(() => {
         console.log('🔄 Forzando actualización...');
         
+        // Guardar la nueva versión como actual
+        if (newVersion && newVersion.version) {
+            localStorage.setItem('currentAppVersion', newVersion.version);
+        }
+        
         // Mostrar indicador de carga
         const loadingToast = document.createElement('div');
         loadingToast.className = 'position-fixed top-50 start-50 translate-middle bg-primary text-white p-3 rounded';
@@ -30,7 +35,7 @@ const useAutoUpdate = () => {
         setTimeout(() => {
             window.location.reload();
         }, 1000);
-    }, []);
+    }, [newVersion]);
 
     // Función para descartar actualización
     const dismissUpdate = useCallback(() => {
@@ -46,8 +51,18 @@ const useAutoUpdate = () => {
             console.log('🔍 Verificando versión:', data);
             
             if (data.latestVersion) {
-                // Aquí podrías comparar con la versión actual si la tienes guardada
                 console.log('📋 Última versión disponible:', data.latestVersion);
+                
+                // Obtener versión actual del localStorage o usar una por defecto
+                const currentVersion = localStorage.getItem('currentAppVersion') || 'Build #0';
+                
+                // Comparar versiones y activar notificación si hay una nueva
+                if (data.latestVersion.version !== currentVersion) {
+                    console.log('🚀 Nueva versión detectada:', data.latestVersion.version, 'vs actual:', currentVersion);
+                    setNewVersion(data.latestVersion);
+                    setUpdateAvailable(true);
+                    setLastUpdate(new Date());
+                }
             }
         } catch (error) {
             console.error('❌ Error al verificar actualizaciones:', error);
@@ -115,6 +130,17 @@ const useAutoUpdate = () => {
             socket.disconnect();
         };
     }, []);
+
+    // Verificar actualizaciones automáticamente al cargar y periódicamente
+    useEffect(() => {
+        // Verificar inmediatamente al cargar
+        checkForUpdates();
+        
+        // Verificar cada 30 segundos
+        const interval = setInterval(checkForUpdates, 30000);
+        
+        return () => clearInterval(interval);
+    }, [checkForUpdates]);
 
     return {
         updateAvailable,
